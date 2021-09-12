@@ -105,6 +105,7 @@ void goStraightPID(float heading, float speed, float distance, float kp, float k
 	previousError = 0.0;
 	int minSpeed = 10;
 	float currentSpeed = minSpeed;
+	int direction = sgn(speed);
 
 	// reset all motor encoders
 	resetChassisEncoder();
@@ -114,11 +115,11 @@ void goStraightPID(float heading, float speed, float distance, float kp, float k
 		// P control of the robot direction
 		error = heading - getGyroDegreesFloat(Gyro);
 		output = PIDController(error, kp, ki, kd, dt);
-		moveSteering(output, currentSpeed);
+		
 		if(abs(getChassisEncoder()) > abs(distance) - abs(decelZone)){ //decel
 			currentSpeed = currentSpeed * (1 - decelRate);
 			if(abs(currentSpeed) < abs(minSpeed)){
-				currentSpeed = abs(minSpeed);
+				currentSpeed = abs(minSpeed) * direction;
 			}
 		}
 		else if(abs(currentSpeed) < abs(speed)){//accel
@@ -127,7 +128,7 @@ void goStraightPID(float heading, float speed, float distance, float kp, float k
 				currentSpeed = speed;
 			}
 		}
-		
+		moveSteering(output, currentSpeed);
 
 		wait1Msec(dt);
 	}
@@ -152,7 +153,6 @@ loop:
 task main()
 {
 	resetGyro(Gyro);
-	g_rotation = 0.0;
 	goStraightPID(0, 90, 1500, 1, 0,0, 0.1, 0.1, 250);
 	turn(90, 100, 70, 0.1, 70);
 
