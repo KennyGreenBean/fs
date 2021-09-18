@@ -107,15 +107,19 @@ void goStraightPID(float heading, float speed, float distance, float kp, float k
 	float currentSpeed = minSpeed;
 	int direction = sgn(speed);
 
-	// reset all motor encoders
+	int currentEncoder = 0;
+	int lastEncoder = 0;\
+	long startingTime = nSysTime;
+	// reset all encoders
 	resetChassisEncoder();
 	resetGyro(Gyro);
+
 	while (abs(getChassisEncoder()) < abs(distance))
 	{
 		// P control of the robot direction
 		error = heading - getGyroDegreesFloat(Gyro);
 		output = PIDController(error, kp, ki, kd, dt);
-		
+
 		if(abs(getChassisEncoder()) > abs(distance) - abs(decelZone)){ //decel
 			currentSpeed = currentSpeed * (1 - decelRate);
 			if(abs(currentSpeed) < abs(minSpeed)){
@@ -129,6 +133,15 @@ void goStraightPID(float heading, float speed, float distance, float kp, float k
 			}
 		}
 		moveSteering(output, currentSpeed);
+
+		currentEncoder = getChassisEncoder();
+		if((nSysTime - startingTime) > 500){
+			if (abs((currentEncoder - lastEncoder)) < 1){
+			playSound(soundSiren2);
+			break;
+			}
+		}
+		lastEncoder = currentEncoder;
 
 		wait1Msec(dt);
 	}
@@ -155,6 +168,7 @@ task main()
 	resetGyro(Gyro);
 	goStraightPID(0, 90, 1500, 1, 0,0, 0.1, 0.1, 250);
 	turn(90, 100, 70, 0.1, 70);
+
 
 	// write a square test, have the robot drive a square to see if it always return to the same spot and direction
 	writeDebugStream("%f", g_rotation); // what's value of g_rotation at this point? is it 1?
